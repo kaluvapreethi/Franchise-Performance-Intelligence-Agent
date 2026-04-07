@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: fct_franchise_revenue
+    description: Monthly franchise revenue aggregation with order counts and truck activity.
+    columns:
+      - name: franchise_id
+        tests:
+          - not_null
+      - name: franchise_owner_name
+        tests:
+          - not_null
+      - name: franchise_city
+        tests:
+          - not_null
+      - name: franchise_country
+        tests:
+          - not_null
+      - name: order_month
+        tests:
+          - not_null
+      - name: total_orders
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+      - name: total_revenue
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+      - name: avg_order_value
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+      - name: active_trucks
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - franchise_id
+            - truck_brand_name
+            - truck_city
+            - order_month
