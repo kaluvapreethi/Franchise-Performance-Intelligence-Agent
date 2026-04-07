@@ -1,0 +1,9 @@
+[project]
+name = "snowflake-infrastructure"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "dbt-snowflake>=1.10.2",
+]

@@ -1,0 +1,131 @@
+name: franchise_revenue_model
+description: >
+  Tasty Bytes franchise revenue analytics model. Covers franchise performance
+  metrics by city, country, truck brand, and time period. Use this for questions
+  about revenue, order volume, average order value, and franchise rankings.
+
+tables:
+  - name: fct_franchise_revenue
+    base_table:
+      database: SNOWFLAKE_INTELLIGENCE
+      schema: SNOWFLAKE_INTELLIGENCE.FRANCHISE_INTELLIGENT_AGENT_FRANCHISE_AGENT_MARTS
+      table: fct_franchise_revenue
+    description: >
+      Monthly aggregated revenue and order metrics per franchise and truck brand.
+      One row per franchise × truck_brand × city × month.
+
+    primary_key:
+      columns:
+        - franchise_id
+        - order_month
+        - truck_brand_name
+
+    dimensions:
+      - name: franchise_id
+        expr: franchise_id
+        description: Unique identifier for each franchise owner
+        data_type: NUMBER
+
+      - name: franchise_owner_name
+        expr: franchise_owner_name
+        description: Full name of the franchise owner
+        data_type: VARCHAR
+        synonyms: [owner, franchisee, operator]
+
+      - name: franchise_city
+        expr: franchise_city
+        description: City where the franchise owner is registered
+        data_type: VARCHAR
+        synonyms: [city, location, region]
+
+      - name: franchise_country
+        expr: franchise_country
+        description: Country where the franchise is registered
+        data_type: VARCHAR
+        synonyms: [country, nation]
+
+      - name: truck_brand_name
+        expr: truck_brand_name
+        description: Brand name of the food truck (e.g. Plant Palace, Cheeky Greek)
+        data_type: VARCHAR
+        synonyms: [brand, truck brand, food truck brand]
+
+      - name: truck_city
+        expr: truck_city
+        description: City where the truck physically operates
+        data_type: VARCHAR
+
+      - name: order_month
+        expr: order_month
+        description: Calendar month of the orders (truncated to first of month)
+        data_type: DATE
+        synonyms: [month, period, time period]
+
+    time_dimensions:
+      - name: order_month
+        expr: order_month
+        description: Month dimension for time-based analysis
+        data_type: DATE
+
+    measures:
+      - name: total_revenue
+        expr: SUM(total_revenue)
+        description: Total revenue in USD across all orders for the period
+        data_type: NUMBER
+        synonyms: [revenue, sales, income, earnings]
+
+      - name: total_orders
+        expr: SUM(total_orders)
+        description: Total number of orders placed
+        data_type: NUMBER
+        synonyms: [orders, order count, transactions]
+
+      - name: avg_order_value
+        expr: AVG(avg_order_value)
+        description: Average order value in USD
+        data_type: NUMBER
+        synonyms: [AOV, basket size, average transaction]
+
+      - name: active_trucks
+        expr: SUM(active_trucks)
+        description: Number of distinct trucks operating under the franchise
+        data_type: NUMBER
+        synonyms: [truck count, fleet size]
+
+verified_queries:
+  - name: top_franchises_by_revenue
+    question: "Which franchise owners have the highest total revenue?"
+    sql: >
+      SELECT franchise_owner_name, franchise_city, franchise_country,
+             SUM(total_revenue) AS total_revenue
+      FROM fct_franchise_revenue
+      GROUP BY 1, 2, 3
+      ORDER BY total_revenue DESC
+      LIMIT 10
+
+  - name: monthly_revenue_trend
+    question: "Show me monthly revenue trend for the last 12 months"
+    sql: >
+      SELECT order_month, SUM(total_revenue) AS monthly_revenue
+      FROM fct_franchise_revenue
+      WHERE order_month >= DATEADD('month', -12, DATE_TRUNC('month', CURRENT_DATE()))
+      GROUP BY 1
+      ORDER BY 1
+
+  - name: lowest_performing_franchises
+    question: "Which franchises have the lowest revenue in the last 6 months?"
+    sql: >
+      SELECT franchise_owner_name, franchise_city, SUM(total_revenue) AS revenue
+      FROM fct_franchise_revenue
+      WHERE order_month >= DATEADD('month', -6, DATE_TRUNC('month', CURRENT_DATE()))
+      GROUP BY 1, 2
+      ORDER BY revenue ASC
+      LIMIT 10
+
+  - name: revenue_by_brand
+    question: "What is total revenue broken down by truck brand?"
+    sql: >
+      SELECT truck_brand_name, SUM(total_revenue) AS total_revenue
+      FROM fct_franchise_revenue
+      GROUP BY 1
+      ORDER BY total_revenue DESC
